@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Personal del punto de venta | Husqvarna Perú</title>
+<style>
+:root{--navy:#172b43;--orange:#ed6509;--line:#dce2e8}*{box-sizing:border-box}body{margin:0;background:#f3f5f7;color:var(--navy);font:15px system-ui,sans-serif}header{background:var(--navy);color:white;padding:24px max(20px,calc((100vw - 1080px)/2));border-bottom:4px solid var(--orange)}header small{letter-spacing:2px}h1{font-size:27px;margin:10px 0}main{max-width:1080px;margin:24px auto;padding:0 16px}.card{background:white;border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:18px}h2{font-size:20px;margin:0 0 16px}p,.muted{color:#586b7d;line-height:1.6}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}label{display:block;font-weight:600;font-size:14px}input:not([type=checkbox]),select{display:block;width:100%;padding:12px;border:1px solid #bbc6d1;border-radius:7px;margin-top:7px;font:inherit;background:white;color:var(--navy)}button,.button{padding:11px 16px;border:1px solid #bcc8d3;border-radius:7px;background:white;color:var(--navy);font:600 14px system-ui;cursor:pointer}button:hover{background:#edf2f6}.primary{background:var(--orange);border-color:var(--orange);color:white}.primary:hover{background:#cf5704}.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.result{display:block;width:100%;text-align:left;margin-top:8px;font-weight:400}.result strong{display:block}.chips{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 20px}.chips label{border:1px solid var(--line);border-radius:8px;padding:10px}.person{border:1px solid var(--line);padding:18px;border-radius:10px;margin:16px 0}.person h3{margin-top:0}.person summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:12px}.person summary::-webkit-details-marker{display:none}.person summary:after{content:"＋";margin-left:auto;font-size:24px;color:var(--orange)}.person[open] summary:after{content:"−"}.person summary strong{display:block;font-size:18px}.person summary small{display:block;font-weight:400;color:#586b7d;margin-top:5px}.person[open] summary{border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px}.person summary:focus-visible{outline:3px solid #ffb681;outline-offset:4px}.status{margin-top:14px;min-height:24px}.stats{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.stat{padding:12px 18px;background:#eef3f7;border-radius:8px}.stat b{font-size:23px;margin-right:7px}input:focus,select:focus,button:focus-visible{outline:3px solid #ffb681;outline-offset:2px}[hidden]{display:none!important}.footer{font-size:13px} @media(max-width:650px){.grid{grid-template-columns:1fr}.card{padding:18px}h1{font-size:23px}}
+</style>
+<header><small>HUSQVARNA PERÚ · IMPULSORES</small><h1>Personal del punto de venta</h1><div>Base de contactos y participación en el ecosistema Husqvarna</div></header>
+<main><div class="card"><div class="bar"><h2 style="flex:1;margin:0">Base de datos de puntos de venta</h2><button id="refresh" type="button">Actualizar base de datos</button></div><p id="connection" role="status">Conectando con Power Automate…</p><small>Consulta y actualiza las fichas del base de datos. Los cambios se confirman al terminar el guardado.</small></div>
+<div class="card"><h2>1. Seleccionar punto de venta</h2><label for="impulsorFilter">Impulsor</label><select id="impulsorFilter" disabled><option value="">Selecciona tu nombre</option></select><p id="filterCount" class="muted"></p><label for="search">Buscar por cliente, código o ubicación</label><input id="search" disabled autocomplete="off" placeholder="Escribe al menos 2 letras"><div id="results"></div><p id="hint">Escribe dos letras para comenzar la búsqueda.</p></div>
+<form id="form" hidden><fieldset id="editor" style="border:0;padding:0;margin:0">
+<div class="card"><h2 id="title"></h2><p id="location"></p><div class="grid"><label>N.º total de personas que trabajan en el punto de venta<input id="total" type="number" min="0" step="1" placeholder="Sin información"></label><div><label>Impulsor asignado</label><p id="assigned"></p><small id="updated"></small></div></div><div class="stats" id="stats"></div><small class="muted">El total declarado es independiente de las personas identificadas. Cada persona puede desempeñar varias funciones.</small></div>
+<div class="card"><div class="bar"><h2 style="margin:0;flex:1">2. Personal registrado</h2><button type="button" id="add">+ Agregar persona</button></div><p>Actualiza las fichas en cada visita. Si una persona se retira, márcala como inactiva para conservar su registro.</p><div class="grid" style="margin-bottom:18px"><label>Buscar persona<input id="personSearch" placeholder="Nombre o teléfono"></label><label>Filtrar por función<select id="roleFilter"><option value="">Todas las funciones</option></select></label></div><p id="personFilterStatus" class="muted"></p><div id="people"></div><details id="inactiveGroup" hidden><summary id="inactiveLabel" style="cursor:pointer;font-weight:600;padding:14px 0"></summary><div id="inactivePeople"></div></details></div>
+<div class="card"><div class="bar"><button class="primary" type="submit">Guardar</button><button type="button" id="cancel">Descartar cambios</button></div><p class="muted">Al guardar confirmas que revisaste la información en esta visita, aunque no hayas realizado cambios.</p><div class="status" id="status" role="status" aria-live="polite"></div></div>
+</fieldset></form>
+<div class="card" hidden><h2>Respaldo de la base</h2><div class="bar"><button id="backup">Exportar respaldo JSON</button><button id="csv">Exportar contactos CSV</button></div><p class="footer">Los datos mostrados se consultan en el base de datos mediante Power Automate. Los respaldos exportados contienen la última información consultada o guardada. Usa “Actualizar base de datos” para obtener la última información.</p><div id="globalStatus" role="status"></div></div>
+</main>
+<script>
+const FLOW_URL="https://9cb6789baf40e35d9e109ad425c820.42.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/17/workflows/eda0a72618844020ae47d247555bef61/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=O8UfauijQZ5dJQrzvCDvtGMQoke9kb_lvkuGmiDGJE0";
+const SAVE_URL='https://9cb6789baf40e35d9e109ad425c820.42.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/06/workflows/9016ea215f5a4c37a7ab3f7ddae52ea4/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=YbgIU7tcv0NOj3uYpx2H8PfK1KCQL0W2f3QI9Fv_0yU';
+let db=[],selected=null,draft=null,dirty=false,loaded=false,saving=false;
+const expandedPeople=new Set();
+const $=id=>document.getElementById(id), roles=['Propietario / Dueño','Administrador','Vendedor','Técnico','Almacén / Logística','Compras','Otro'];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+function validDatabase(a){return Array.isArray(a)&&a.length>0&&new Set(a.map(p=>p.id)).size===a.length&&a.every(p=>typeof p.id==='string'&&typeof p.name==='string'&&(p.total===null||Number.isInteger(p.total)&&p.total>=0)&&Array.isArray(p.people)&&new Set(p.people.map(x=>x.id)).size===p.people.length&&p.people.filter(x=>x.main).length<=1&&p.people.every(x=>typeof x.id==='string'&&typeof x.name==='string'&&Array.isArray(x.roles)&&x.roles.every(r=>roles.includes(r))&&typeof x.active==='boolean'&&typeof x.main==='boolean'&&(!x.main||x.active)&&['university','vitrina','telegram'].every(k=>['Sí','No','No sabe'].includes(x[k]))&&['Básico','Intermedio','Avanzado','No evaluado'].includes(x.knowledge)));}
+
+function options(values,value){return values.map(v=>'<option '+(v===value?'selected':'')+'>'+esc(v)+'</option>').join('');}
+function search(){$('results').hidden=false;if(!loaded){$('hint').textContent='Esperando la consulta de la base de datos.';return;}if(!$('impulsorFilter').value){$('results').replaceChildren();$('hint').textContent='Selecciona primero tu impulsor.';return;}let q=norm($('search').value.trim());$('results').replaceChildren();$('hint').textContent=q.length<2?'Escribe dos letras para comenzar la búsqueda.':'';if(q.length<2)return;let found=db.filter(p=>p.impulsor===$('impulsorFilter').value&&norm([p.name,p.code,p.city,p.department,p.address].join(' ')).includes(q));$('hint').textContent=found.length?found.length+' coincidencias. Se muestran hasta 30.':'No se encontraron puntos de venta.';found.slice(0,30).forEach(p=>{let b=document.createElement('button');b.className='result';b.innerHTML='<strong>'+esc(p.name)+'</strong>'+esc([p.code,p.city,p.department].filter(Boolean).join(' · '));b.onclick=()=>openPoint(p.id);$('results').append(b);});}
+function openPoint(id){if(saving)return;const point=db.find(p=>p.id===id);if(!point||point.impulsor!==$('impulsorFilter').value)return;if(dirty&&!confirm('Hay cambios sin guardar. ¿Descartarlos?'))return;expandedPeople.clear();$('personSearch').value='';$('roleFilter').value='';$('inactiveGroup').open=false;selected=id;draft=structuredClone(db.find(p=>p.id===id));dirty=false;$('form').hidden=false;$('title').textContent=draft.name;$('location').textContent=[draft.code,draft.city,draft.department,draft.address].filter(Boolean).join(' · ');$('assigned').textContent=draft.impulsor||'Sin asignación';$('total').value=draft.total??'';$('updated').textContent=draft.updated?'Última revisión confirmada: '+new Date(draft.updated).toLocaleString('es-PE'):'Pendiente de primera revisión';$('status').textContent='';$('search').value=draft.name;$('results').replaceChildren();$('results').hidden=true;$('hint').textContent='Punto seleccionado: '+draft.name;render();}
+function stats(){let n=draft.people.filter(p=>p.active).length;$('stats').innerHTML='<div class="stat"><b>'+n+'</b>personas activas registradas</div><div class="stat"><b>'+draft.people.length+'</b>fichas totales</div><div class="stat"><b>'+(draft.total===null?'—':Math.max(0,draft.total-n))+'</b>personas pendientes de identificar</div>'+(draft.total!==null&&n>draft.total?'<p>Revisa el total declarado: hay más personas activas registradas.</p>':'');}
+function pending(p){const missing=[];if(!p.name.trim())missing.push('nombre');if(!p.roles.length)missing.push('funciones');if(!p.phone.trim())missing.push('teléfono');if(p.university==='No sabe')missing.push('Universidad');if(p.vitrina==='No sabe')missing.push('Vitrina Plus');if(p.telegram==='No sabe')missing.push('Telegram');if(p.knowledge==='No evaluado')missing.push('conocimiento');return missing;}
+function personSummary(p){const missing=pending(p);return (p.roles.join(' · ')||'Funciones pendientes')+(p.main?' · Responsable principal':'')+(p.active?'':' · Inactiva')+' · '+(missing.length?'Pendiente: '+missing.join(', '):'Información completa');}
+function filterPeople(){if(!draft)return;let visible=0;document.querySelectorAll('.person').forEach(node=>{const p=draft.people[Number(node.dataset.index)];const q=norm($('personSearch').value.trim());const show=norm(p.name+' '+p.phone).includes(q)&&(!$('roleFilter').value||p.roles.includes($('roleFilter').value));node.hidden=!show;if(show)visible++;});$('personFilterStatus').textContent=($('personSearch').value||$('roleFilter').value)?visible+' fichas coinciden (incluye inactivos en su apartado).':'';}
+function duplicateNames(){const warnings=[];for(let i=0;i<draft.people.length;i++)for(let j=i+1;j<draft.people.length;j++){const a=draft.people[i],b=draft.people[j];const phone=a.phone.replace(/[^0-9]/g,'');if((a.name.trim()&&norm(a.name.trim())===norm(b.name.trim()))||(phone&&phone===b.phone.replace(/[^0-9]/g,'')))warnings.push(a.name+' / '+b.name);}return warnings;}
+$('roleFilter').innerHTML='<option value="">Todas las funciones</option>'+roles.map(r=>'<option>'+esc(r)+'</option>').join('');
+['personSearch','roleFilter'].forEach(id=>$(id).addEventListener('input',filterPeople));
+function extraStats(){const active=draft.people.filter(p=>p.active);$('stats').innerHTML+='<div class="stat"><b>'+active.filter(p=>p.university==='Sí').length+'</b>Universidad</div><div class="stat"><b>'+active.filter(p=>p.vitrina==='Sí').length+'</b>Vitrina Plus</div><div class="stat"><b>'+active.filter(p=>pending(p).length).length+'</b>fichas por completar</div><p style="width:100%;margin:0">Responsable principal: '+esc(active.find(p=>p.main)?.name||'Pendiente de designar')+'</p>';}
+function render(){stats();extraStats();const inactive=draft.people.filter(p=>!p.active).length;$('inactiveGroup').hidden=inactive===0;$('inactiveLabel').textContent='Ver personal inactivo ('+inactive+')';$('inactivePeople').replaceChildren();$('people').innerHTML=draft.people.some(p=>p.active)?'':'<p>No hay personas activas registradas. Usa “Agregar persona” para crear una ficha.</p>';draft.people.forEach((p,i)=>{let node=document.createElement('details');node.className='person';node.dataset.index=i;node.open=expandedPeople.has(p.id);node.addEventListener('toggle',()=>{if(!node.isConnected)return;if(node.open)expandedPeople.add(p.id);else expandedPeople.delete(p.id);});node.innerHTML='<summary><span><strong data-summary-name>'+esc(p.name.trim()||'Nueva persona')+'</strong><small data-summary-meta>'+esc(personSummary(p))+'</small></span></summary>'+'<div class="grid"><label>Nombre y apellidos *<input data-field="name" value="'+esc(p.name)+'" required maxlength="150"></label><label>¿Continúa trabajando en el punto de venta?<select data-field="active">'+options(['Sí','No'],p.active?'Sí':'No')+'</select></label></div><p style="margin-bottom:5px">Funciones que desempeña * — puedes marcar varias</p><div class="chips">'+roles.map(r=>'<label><input type="checkbox" data-role="'+esc(r)+'" '+(p.roles.includes(r)?'checked':'')+'> '+esc(r)+'</label>').join('')+'</div><div class="grid"><label>Teléfono / WhatsApp<input data-field="phone" type="tel" value="'+esc(p.phone)+'" maxlength="30"></label><label>Correo electrónico<input data-field="email" type="email" value="'+esc(p.email)+'" maxlength="200"></label>'+[['university','Universidad Husqvarna'],['vitrina','Vitrina Plus'],['telegram','Canal de Telegram Husqvarna']].map(([k,l])=>'<label>'+l+'<select data-field="'+k+'">'+options(['No sabe','Sí','No'],p[k])+'</select></label>').join('')+'<label>Nivel de conocimiento de productos Husqvarna<select data-field="knowledge">'+options(['No evaluado','Básico','Intermedio','Avanzado'],p.knowledge)+'</select></label></div><p><label><input type="checkbox" data-field="main" '+(p.main?'checked':'')+' '+(!p.active?'disabled':'')+'> Responsable principal del punto de venta para Husqvarna</label></p><small class="muted">Solo una persona activa puede ser responsable principal.</small>';node.addEventListener('input',e=>{let t=e.target;if(t.dataset.role){p.roles=t.checked?[...p.roles,t.dataset.role]:p.roles.filter(r=>r!==t.dataset.role);}else if(t.dataset.field){let k=t.dataset.field;if(k==='main'){draft.people.forEach(x=>x.main=false);p.main=t.checked;render();}else if(k==='active'){if(t.value==='No'&&p.active&&!confirm('¿Marcar a '+(p.name||'esta persona')+' como inactiva? Su ficha se conservará.')){t.value='Sí';return;}p.active=t.value==='Sí';if(!p.active)p.main=false;render();}else p[k]=t.value;}const heading=node.querySelector('[data-summary-name]');if(heading)heading.textContent=p.name.trim()||'Nueva persona';const meta=node.querySelector('[data-summary-meta]');if(meta)meta.textContent=personSummary(p);dirty=true;stats();extraStats();});$(p.active?'people':'inactivePeople').append(node);});filterPeople();}
+$('form').addEventListener('invalid',e=>{const panel=e.target.closest('details');if(panel){panel.hidden=false;if(panel.closest('#inactiveGroup'))$('inactiveGroup').open=true;panel.open=true;expandedPeople.add(draft.people[Number(panel.dataset.index)].id);}},true);
+$('search').oninput=search;
+let filterSelection='';
+function populateImpulsores(){
+ const values=[...new Set(db.map(p=>p.impulsor).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+ $('impulsorFilter').innerHTML='<option value="">Selecciona tu nombre</option>'+values.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
+ if(values.includes(filterSelection))$('impulsorFilter').value=filterSelection;else filterSelection='';
+ $('impulsorFilter').disabled=false;applyFilter();
+}
+function applyFilter(){
+ const value=$('impulsorFilter').value;$('search').disabled=!loaded||!value;
+ $('filterCount').textContent=value?db.filter(p=>p.impulsor===value).length+' puntos de venta asignados.':'';
+ search();
+}
+$('impulsorFilter').onchange=()=>{
+ if(saving||(dirty&&!confirm('Hay cambios sin guardar. ¿Descartarlos y cambiar de impulsor?'))){$('impulsorFilter').value=filterSelection;return;}
+ filterSelection=$('impulsorFilter').value;dirty=false;selected=null;draft=null;$('form').hidden=true;$('search').value='';applyFilter();
+};
+$('total').oninput=()=>{draft.total=$('total').value===''?null:Number($('total').value);dirty=true;stats();extraStats();};
+$('add').onclick=()=>{$('personSearch').value='';$('roleFilter').value='';draft.people.push({id:'P-'+Date.now()+'-'+Math.random().toString(36).slice(2),name:'',roles:[],phone:'',email:'',university:'No sabe',vitrina:'No sabe',telegram:'No sabe',knowledge:'No evaluado',main:false,active:true});expandedPeople.add(draft.people[draft.people.length-1].id);dirty=true;render();$('people').lastElementChild.querySelector('input').focus();};
+$('cancel').onclick=()=>{if(!dirty||confirm('¿Descartar los cambios de este punto de venta?')){dirty=false;openPoint(selected);}};
+$('form').onsubmit=async e=>{
+ e.preventDefault();if(saving||!draft)return;
+ if(draft.total!==null&&(!Number.isInteger(draft.total)||draft.total<0)){$('status').textContent='Revisa el total de personas.';return;}
+ if(draft.people.some(p=>!p.name.trim()||!p.roles.length)){$('personSearch').value='';$('roleFilter').value='';draft.people.filter(p=>!p.name.trim()||!p.roles.length).forEach(p=>{expandedPeople.add(p.id);if(!p.active)$('inactiveGroup').open=true;});render();$('status').textContent='Completa el nombre y al menos una función de cada persona.';return;}
+ if(!Number.isInteger(draft.revision)||draft.revision<0){$('status').textContent='Actualiza la base de datos para obtener una revisión válida.';return;}
+ const duplicates=duplicateNames();if(duplicates.length&&!confirm('Posibles registros duplicados:\n'+duplicates.slice(0,10).join('\n')+'\n¿Guardar de todas formas?'))return;
+ const payload={accion:'guardar',idPDV:draft.id,totalPersonas:draft.total,revision:draft.revision,personas:structuredClone(draft.people)};
+ saving=true;$('impulsorFilter').disabled=true;$('editor').disabled=true;$('refresh').disabled=true;$('search').disabled=true;
+ $('status').textContent='Guardando en el base de datos…';
+ try{
+  const result=await requestFlow(SAVE_URL,payload);
+  if(result.ok!==true)throw Error(result.mensaje||'El flujo no confirmó el guardado. Revisa su historial.');
+  if(result.idPDV!==draft.id||!Number.isInteger(result.revision)||result.revision!==payload.revision+1)throw Error('La confirmación no coincide con esta ficha. Consulta la base de datos antes de reintentar.');
+  draft.revision=result.revision;draft.updated=result.actualizado;draft.people.forEach(p=>{p.name=p.name.trim();p.phone=p.phone.trim();p.email=p.email.trim();});
+  db[db.findIndex(p=>p.id===draft.id)]=structuredClone(draft);dirty=false;
+  $('updated').textContent='Última revisión confirmada: '+new Date(draft.updated).toLocaleString('es-PE');
+  $('status').textContent='Guardado confirmado en la base de datos.';
+ }catch(err){$('status').textContent=(err.message||'No se pudo confirmar el guardado.')+' Tus cambios siguen en pantalla.';}
+ finally{saving=false;$('impulsorFilter').disabled=false;$('editor').disabled=false;$('refresh').disabled=false;$('search').disabled=!$('impulsorFilter').value;}
+};
+async function requestFlow(url,payload){
+ const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),180000);
+ try{
+  let response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal,cache:'no-store'});
+  while(response.status===202){
+   const location=response.headers.get('Location');
+   if(!location)throw Error('Solicitud recibida, pero falta el enlace de confirmación. Revisa la base de datos antes de reintentar.');
+   const next=new URL(location,url);if(next.protocol!=='https:'||!(next.hostname.endsWith('.powerplatform.com')||next.hostname.endsWith('.logic.azure.com')||next.hostname.endsWith('.flow.microsoft.com')))throw Error('El enlace de confirmación no es válido.');
+   await new Promise(resolve=>setTimeout(resolve,Math.min(10000,Math.max(1000,Number(response.headers.get('Retry-After')||2)*1000))));
+   response=await fetch(next.href,{signal:controller.signal,cache:'no-store'});
+  }
+  if(!response.ok)throw Error('Power Automate respondió HTTP '+response.status+'. Revisa el historial del flujo.');
+  return await response.json();
+ }catch(err){if(err.name==='AbortError')throw Error('El guardado no se confirmó a tiempo. Revisa la base de datos antes de reintentar.');throw err;}
+ finally{clearTimeout(timer);}
+}
+function download(content,name,type){let url=URL.createObjectURL(new Blob([content],{type}));let a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function exportReady(){if(!loaded){$('globalStatus').textContent='Primero carga la información de la base de datos.';return false;}if(dirty){$('globalStatus').textContent='Guarda o descarta los cambios del punto de venta antes de exportar.';return false;}return true;}
+$('backup').onclick=()=>{if(exportReady())download(JSON.stringify({schema:1,exported:new Date().toISOString(),points:db},null,2),'Respaldo_Personal_Husqvarna.json','application/json');};
+$('csv').onclick=()=>{if(!exportReady())return;let rows=[['ID punto','Código cliente','Punto de venta','Distrito','Departamento','Total declarado','ID persona','Nombre','Funciones','Teléfono','Correo','Universidad Husqvarna','Vitrina Plus','Telegram','Conocimiento','Responsable principal','Activo','Actualizado']];db.forEach(p=>p.people.forEach(x=>rows.push([p.id,p.code,p.name,p.city,p.department,p.total,x.id,x.name,x.roles.join(' | '),x.phone,x.email,x.university,x.vitrina,x.telegram,x.knowledge,x.main?'Sí':'No',x.active?'Sí':'No',p.updated])));download('\ufeff'+rows.map(r=>r.map(v=>{let s=String(v??'');if(/^[=+@-]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}).join(';')).join('\r\n'),'Contactos_Husqvarna.csv','text/csv;charset=utf-8');};
+
+window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
+
+function fromExcel(data){
+ if(!data||!Array.isArray(data.puntosVenta)||!Array.isArray(data.personal))throw Error('La respuesta no contiene las listas puntosVenta y personal. Revisa Response en el flujo.');
+ const str=v=>String(v??'').trim();
+ const tri=v=>['Sí','No','No sabe'].includes(str(v))?str(v):'No sabe';
+ const yes=v=>str(v).toLowerCase()==='sí'||str(v).toLowerCase()==='si'||v===true;
+ const points=data.puntosVenta.filter(p=>str(p.IdPDV)).map(p=>{
+  const total=str(p.TotalPersonas)===''?null:Number(p.TotalPersonas);
+  if(total!==null&&(!Number.isInteger(total)||total<0))throw Error('Un punto de venta tiene un total de personas inválido.');
+  return {id:str(p.IdPDV),code:str(p.CodigoCliente),name:str(p.Cliente),department:str(p.Departamento),city:str(p.Distrito),address:str(p.Direccion),impulsor:str(p.Impulsor),total,updated:str(p.FechaActualizacion)||null,revision:Number(p.Revision||0),people:[]};
+ });
+ const index=new Map(points.map(p=>[p.id,p]));
+ if(index.size!==points.length)throw Error('Hay identificadores de puntos de venta duplicados en la base de datos.');
+ const ids=new Set();
+ for(const x of data.personal){
+  if(!str(x.IdPersona))continue;
+  const owner=index.get(str(x.IdPDV));
+  if(!owner)throw Error('Una persona está vinculada a un punto de venta que no existe.');
+  const id=str(x.IdPersona);
+  if(ids.has(id))throw Error('Hay identificadores de personas duplicados en la base de datos.');
+  ids.add(id);
+  owner.people.push({id,name:str(x.Nombre),roles:str(x.Funciones).split('|').map(v=>v.trim()).filter(Boolean),phone:str(x.Telefono),email:str(x.Correo),university:tri(x.Universidad),vitrina:tri(x.VitrinaPlus),telegram:tri(x.Telegram),knowledge:['Básico','Intermedio','Avanzado','No evaluado'].includes(str(x.Conocimiento))?str(x.Conocimiento):'No evaluado',main:yes(x.ResponsablePrincipal),active:yes(x.Activo)});
+ }
+ if(!validDatabase(points))throw Error('Revisa los datos de la base de datos: funciones, responsable único y estado activo.');
+ return points;
+}
+async function refresh(){
+ if(saving)return;if(dirty&&!confirm('Hay cambios sin guardar. ¿Descartarlos y consultar la base de datos?'))return;
+ $('refresh').disabled=true;$('impulsorFilter').disabled=true;$('search').disabled=true;loaded=false;$('results').replaceChildren();$('form').hidden=true;
+ $('connection').textContent='Consultando el base de datos…';
+ const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),110000);
+ try{
+  const response=await fetch(FLOW_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'listar'}),signal:controller.signal,cache:'no-store'});
+  if(!response.ok)throw Error('Power Automate respondió HTTP '+response.status+'. Revisa el historial del flujo.');
+  const data=await response.json();const next=fromExcel(data);
+  db=next;loaded=true;draft=null;selected=null;dirty=false;
+  $('connection').textContent='Consulta recibida: '+db.length+' puntos de venta y '+db.reduce((n,p)=>n+p.people.length,0)+' personas. '+new Date().toLocaleString('es-PE');
+  $('backup').disabled=false;$('csv').disabled=false;populateImpulsores();
+ }catch(err){
+  db=[];$('connection').textContent=err.name==='AbortError'?'La consulta tardó demasiado. Revisa la ejecución en Power Automate y vuelve a intentar.':err instanceof TypeError?'No se pudo consultar el flujo desde el navegador. Revisa conexión, URL y permisos CORS; la base no se cargó.':err.message;
+  $('hint').textContent='Sin datos cargados. Usa “Actualizar base de datos” para reintentar.';$('backup').disabled=true;$('csv').disabled=true;
+ }finally{clearTimeout(timer);$('refresh').disabled=false;$('search').disabled=!loaded||!$('impulsorFilter').value;}
+}
+$('refresh').onclick=refresh;
+refresh();
+
+</script></html>
